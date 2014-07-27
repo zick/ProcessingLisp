@@ -2,5 +2,8 @@ nil
         sym bol
 42
 ()
+(a)
+(a b c)
+(car '(a b c))
+(((a)b c)d)
 )(
-'a

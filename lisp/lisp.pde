@@ -33,7 +33,7 @@ class LObj {
     } else if (tag == ERROR) {
       return "<error: " + str() + ">";
     } else if (tag == CONS) {
-      return "CONS";
+      return listToString(this);
     } else if (tag == SUBR) {
       return "<subr>";
     } else if (tag == EXPR) {
@@ -41,6 +41,24 @@ class LObj {
     } else {
       return "<unknown>";
     }
+  }
+
+  String listToString(LObj obj) {
+    String ret = "";
+    boolean first = true;
+    while (obj.tag == CONS) {
+      if (first) {
+        first = false;
+      } else {
+        ret += " ";
+      }
+      ret += obj.cons().car.toString();
+      obj = obj.cons().cdr;
+    }
+    if (obj == kNil) {
+      return "(" + ret + ")";
+    }
+    return "(" + ret + " . " + obj.toString() + ")";
   }
 }
 
@@ -51,6 +69,10 @@ class Cons {
     car = a;
     cdr = d;
   }
+}
+
+LObj makeCons(LObj a, LObj d) {
+  return new LObj(CONS, new Cons(a, d));
 }
 
 class Subr {
@@ -77,6 +99,7 @@ LObj makeSym(String str) {
   }
   return symTable.get(str);
 }
+LObj symQuote = makeSym("quote");
 
 LObj safeCar(LObj obj) {
   if (obj.tag == CONS) {
@@ -90,6 +113,17 @@ LObj safeCdr(LObj obj) {
     return obj.cons().cdr;
   }
   return kNil;
+}
+
+LObj nreverse(LObj lst) {
+  LObj ret = kNil;
+  while (lst.tag == CONS) {
+    LObj tmp = lst.cons().cdr;
+    lst.cons().cdr = ret;
+    ret = lst;
+    lst = tmp;
+  }
+  return ret;
 }
 
 boolean isSpace(char c) {
@@ -150,11 +184,32 @@ ParseState read(String str) {
   } else if (str.charAt(0) == kRPar) {
     return parseError("invalid syntax: " + str);
   } else if (str.charAt(0) == kLPar) {
-    return parseError("noimpl");
+    return readList(str.substring(1));
   } else if (str.charAt(0) == kQuote) {
-    return parseError("noimpl");
+    ParseState tmp = read(str.substring(1));
+    return new ParseState(makeCons(symQuote, makeCons(tmp.obj, kNil)),
+                          tmp.next);
   }
   return readAtom(str);
+}
+
+ParseState readList(String str) {
+  LObj ret = kNil;
+  while (true) {
+    str = skipSpaces(str);
+    if (str.length() == 0) {
+      return parseError("unfinished parenthesis");
+    } else if (str.charAt(0) == kRPar) {
+      break;
+    }
+    ParseState tmp = read(str);
+    if (tmp.obj.tag == ERROR) {
+      return tmp;
+    }
+    ret = makeCons(tmp.obj, ret);
+    str = tmp.next;
+  }
+  return new ParseState(nreverse(ret), str.substring(1));
 }
 
 void initialize() {
