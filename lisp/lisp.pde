@@ -102,6 +102,7 @@ LObj makeSym(String str) {
 LObj symT = makeSym("t");
 LObj symQuote = makeSym("quote");
 LObj symIf = makeSym("if");
+LObj symLambda = makeSym("lambda");
 
 LObj safeCar(LObj obj) {
   if (obj.tag == CONS) {
@@ -117,6 +118,10 @@ LObj safeCdr(LObj obj) {
   return kNil;
 }
 
+LObj makeExpr(LObj args, LObj env) {
+  return new LObj(EXPR, new Expr(safeCar(args), safeCdr(args), env));
+}
+
 LObj nreverse(LObj lst) {
   LObj ret = kNil;
   while (lst.tag == CONS) {
@@ -126,6 +131,16 @@ LObj nreverse(LObj lst) {
     lst = tmp;
   }
   return ret;
+}
+
+LObj pairlis(LObj lst1, LObj lst2) {
+  LObj ret = kNil;
+  while (lst1.tag == CONS && lst2.tag == CONS) {
+    ret = makeCons(makeCons(lst1.cons().car, lst2.cons().car), ret);
+    lst1 = lst1.cons().cdr;
+    lst2 = lst2.cons().cdr;
+  }
+  return nreverse(ret);
 }
 
 boolean isSpace(char c) {
@@ -256,6 +271,8 @@ LObj eval(LObj obj, LObj env) {
       return eval(safeCar(safeCdr(safeCdr(args))), env);
     }
     return eval(safeCar(safeCdr(args)), env);
+  } else if (op == symLambda) {
+    return makeExpr(args, env);
   }
   return apply(eval(op, env), evlis(args, env));
 }
@@ -273,6 +290,15 @@ LObj evlis(LObj lst, LObj env) {
   return nreverse(ret);
 }
 
+LObj progn(LObj body, LObj env) {
+  LObj ret = kNil;
+  while (body.tag == CONS) {
+    ret = eval(body.cons().car, env);
+    body = body.cons().cdr;
+  }
+  return ret;
+}
+
 LObj apply(LObj fn, LObj args) {
   if (fn.tag == ERROR) {
     return fn;
@@ -280,6 +306,9 @@ LObj apply(LObj fn, LObj args) {
     return args;
   } else if (fn.tag == SUBR) {
     return fn.subr().call(args);
+  } else if (fn.tag == EXPR) {
+    return progn(fn.expr().body,
+                 makeCons(pairlis(fn.expr().args, args), fn.expr().env));
   }
   return new LObj(ERROR, fn.toString() + " is not function");
 }

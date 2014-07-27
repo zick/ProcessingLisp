@@ -13,3 +13,7 @@ t
 (cons 1 2)
 (car (cons 1 2))
 (cdr (cons 1 2))
+(lambda())
+((lamhda()1 2 3))
+((lambda(x)(cons x x))1)
+((lambda(x y)(cons y x))1 2)
