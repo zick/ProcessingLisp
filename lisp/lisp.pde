@@ -348,12 +348,106 @@ class SubrCons extends Subr {
   }
 }
 
+class SubrEq extends Subr {
+  LObj call(LObj args) {
+    LObj x = safeCar(args);
+    LObj y = safeCar(safeCdr(args));
+    if (x.tag == NUM && y.tag == NUM && x.num() == y.num()) {
+      return symT;
+    } else if (x == y) {
+      return symT;
+    }
+    return kNil;
+  }
+}
+
+class SubrAtom extends Subr {
+  LObj call(LObj args) {
+    if (safeCar(args).tag == CONS) {
+      return kNil;
+    }
+    return symT;
+  }
+}
+
+class SubrNumberp extends Subr {
+  LObj call(LObj args) {
+    if (safeCar(args).tag == NUM) {
+      return symT;
+    }
+    return kNil;
+  }
+}
+
+class SubrSymbolp extends Subr {
+  LObj call(LObj args) {
+    if (safeCar(args).tag == SYM) {
+      return symT;
+    }
+    return kNil;
+  }
+}
+
+class SubrAddOrMul extends Subr {
+  LObj call(LObj args) {
+    Integer ret = initVal();
+    while (args.tag == CONS) {
+      if (args.cons().car.tag != NUM) {
+        return new LObj(ERROR, "wrong type");
+      }
+      ret = calc(ret, args.cons().car.num());
+      args = args.cons().cdr;
+    }
+    return new LObj(NUM, ret);
+  }
+  Integer calc(Integer x, Integer y) { return 0; }
+  Integer initVal() { return 0; }
+}
+class SubrAdd extends SubrAddOrMul {
+  Integer calc(Integer x, Integer y) { return x + y; }
+  Integer initVal() { return 0; }
+}
+class SubrMul extends SubrAddOrMul {
+  Integer calc(Integer x, Integer y) { return x * y; }
+  Integer initVal() { return 1; }
+}
+
+class SubrSubOrDivOrMod extends Subr {
+  LObj call(LObj args) {
+    LObj x = safeCar(args);
+    LObj y = safeCar(safeCdr(args));
+    if (x.tag != NUM || y.tag != NUM) {
+      return new LObj(ERROR, "wrong type");
+    }
+    return new LObj(NUM, calc(x.num(), y.num()));
+  }
+  Integer calc(Integer x, Integer y) { return 0; }
+}
+class SubrSub extends SubrSubOrDivOrMod {
+  Integer calc(Integer x, Integer y) { return x - y; }
+}
+class SubrDiv extends SubrSubOrDivOrMod {
+  Integer calc(Integer x, Integer y) { return x / y; }
+}
+class SubrMod extends SubrSubOrDivOrMod {
+  Integer calc(Integer x, Integer y) { return x % y; }
+}
+
 void initialize() {
   symTable.put("nil", kNil);
   addToEnv(symT, symT, gEnv);
   addToEnv(makeSym("car"), new LObj(SUBR, new SubrCar()), gEnv);
   addToEnv(makeSym("cdr"), new LObj(SUBR, new SubrCdr()), gEnv);
   addToEnv(makeSym("cons"), new LObj(SUBR, new SubrCons()), gEnv);
+  addToEnv(makeSym("eq"), new LObj(SUBR, new SubrEq()), gEnv);
+  addToEnv(makeSym("atom"), new LObj(SUBR, new SubrAtom()), gEnv);
+  addToEnv(makeSym("numberp"), new LObj(SUBR, new SubrNumberp()), gEnv);
+  addToEnv(makeSym("symbolp"), new LObj(SUBR, new SubrSymbolp()), gEnv);
+  addToEnv(makeSym("+"), new LObj(SUBR, new SubrAdd()), gEnv);
+  addToEnv(makeSym("*"), new LObj(SUBR, new SubrMul()), gEnv);
+  addToEnv(makeSym("-"), new LObj(SUBR, new SubrSub()), gEnv);
+  addToEnv(makeSym("/"), new LObj(SUBR, new SubrDiv()), gEnv);
+  addToEnv(makeSym("mod"), new LObj(SUBR, new SubrMod()), gEnv);
 }
 
 void setup(){
