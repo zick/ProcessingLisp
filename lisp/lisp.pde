@@ -99,6 +99,7 @@ LObj makeSym(String str) {
   }
   return symTable.get(str);
 }
+LObj symT = makeSym("t");
 LObj symQuote = makeSym("quote");
 
 LObj safeCar(LObj obj) {
@@ -212,8 +213,42 @@ ParseState readList(String str) {
   return new ParseState(nreverse(ret), str.substring(1));
 }
 
+LObj findVar(LObj sym, LObj env) {
+  while (env.tag == CONS) {
+    LObj alist = env.cons().car;
+    while (alist.tag == CONS) {
+      if (alist.cons().car.cons().car == sym) {
+        return alist.cons().car;
+      }
+      alist = alist.cons().cdr;
+    }
+    env = env.cons().cdr;
+  }
+  return kNil;
+}
+
+LObj gEnv = makeCons(kNil, kNil);
+
+void addToEnv(LObj sym, LObj val, LObj env) {
+  env.cons().car = makeCons(makeCons(sym, val), env.cons().car);
+}
+
+LObj eval(LObj obj, LObj env) {
+  if (obj.tag == NIL || obj.tag == NUM || obj.tag == ERROR) {
+    return obj;
+  } else if (obj.tag == SYM) {
+    LObj bind = findVar(obj, env);
+    if (bind == kNil) {
+      return new LObj(ERROR, obj.str() + " has no value");
+    }
+    return bind.cons().cdr;
+  }
+  return new LObj(ERROR, "noimpl");
+}
+
 void initialize() {
   symTable.put("nil", kNil);
+  addToEnv(symT, symT, gEnv);
 }
 
 void setup(){
@@ -222,7 +257,7 @@ void setup(){
   String line;
   try {
     while ((line = reader.readLine()) != null) {
-      println(read(line).obj);
+      println(eval(read(line).obj, gEnv));
     }
   } catch(IOException e) { exit(); }
   exit();
