@@ -104,6 +104,7 @@ LObj symQuote = makeSym("quote");
 LObj symIf = makeSym("if");
 LObj symLambda = makeSym("lambda");
 LObj symDefun = makeSym("defun");
+LObj symSetq = makeSym("setq");
 
 LObj safeCar(LObj obj) {
   if (obj.tag == CONS) {
@@ -279,6 +280,16 @@ LObj eval(LObj obj, LObj env) {
     LObj sym = safeCar(args);
     addToEnv(sym, expr, gEnv);
     return sym;
+  } else if (op == symSetq) {
+    LObj val = eval(safeCar(safeCdr(args)), env);
+    LObj sym = safeCar(args);
+    LObj bind = findVar(sym, env);
+    if (bind == kNil) {
+      addToEnv(sym, val, gEnv);
+    } else {
+      bind.cons().cdr = val;
+    }
+    return val;
   }
   return apply(eval(op, env), evlis(args, env));
 }

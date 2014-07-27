@@ -21,3 +21,10 @@ t
 (f)
 (defun rev(lst acc)(if lst (rev (cdr lst) (cons (car lst) acc)) acc))
 (rev '(1 2 3 4 5) ())
+(setq x 9)
+x
+(defun g(x)(setq x 999)x)
+(g 1)
+x
+(g x)
+x
