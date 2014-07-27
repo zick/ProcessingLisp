@@ -17,3 +17,7 @@ t
 ((lamhda()1 2 3))
 ((lambda(x)(cons x x))1)
 ((lambda(x y)(cons y x))1 2)
+(defun f()1 2 3)
+(f)
+(defun rev(lst acc)(if lst (rev (cdr lst) (cons (car lst) acc)) acc))
+(rev '(1 2 3 4 5) ())

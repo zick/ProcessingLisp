@@ -103,6 +103,7 @@ LObj symT = makeSym("t");
 LObj symQuote = makeSym("quote");
 LObj symIf = makeSym("if");
 LObj symLambda = makeSym("lambda");
+LObj symDefun = makeSym("defun");
 
 LObj safeCar(LObj obj) {
   if (obj.tag == CONS) {
@@ -273,6 +274,11 @@ LObj eval(LObj obj, LObj env) {
     return eval(safeCar(safeCdr(args)), env);
   } else if (op == symLambda) {
     return makeExpr(args, env);
+  } else if (op == symDefun) {
+    LObj expr = makeExpr(safeCdr(args), env);
+    LObj sym = safeCar(args);
+    addToEnv(sym, expr, gEnv);
+    return sym;
   }
   return apply(eval(op, env), evlis(args, env));
 }
