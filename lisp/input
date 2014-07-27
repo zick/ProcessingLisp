@@ -3,8 +3,13 @@ nil
 t
 42
 ()
-(a)
-(a b c)
+'(a)
+'(a b c)
+(if 1 2 3)
+(if () 2 3)
+(if a 2 3)
 (car '(a b c))
-(((a)b c)d)
-)(
+(cdr '(a b c))
+(cons 1 2)
+(car (cons 1 2))
+(cdr (cons 1 2))

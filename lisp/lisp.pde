@@ -101,6 +101,7 @@ LObj makeSym(String str) {
 }
 LObj symT = makeSym("t");
 LObj symQuote = makeSym("quote");
+LObj symIf = makeSym("if");
 
 LObj safeCar(LObj obj) {
   if (obj.tag == CONS) {
@@ -243,12 +244,70 @@ LObj eval(LObj obj, LObj env) {
     }
     return bind.cons().cdr;
   }
-  return new LObj(ERROR, "noimpl");
+  LObj op = safeCar(obj);
+  LObj args = safeCdr(obj);
+  if (op == symQuote) {
+    return safeCar(args);
+  } else if (op == symIf) {
+    LObj c = eval(safeCar(args), env);
+    if (c.tag == ERROR) {
+      return c;
+    } else if (c == kNil) {
+      return eval(safeCar(safeCdr(safeCdr(args))), env);
+    }
+    return eval(safeCar(safeCdr(args)), env);
+  }
+  return apply(eval(op, env), evlis(args, env));
+}
+
+LObj evlis(LObj lst, LObj env) {
+  LObj ret = kNil;
+  while (lst.tag == CONS) {
+    LObj elm = eval(lst.cons().car, env);
+    if (elm.tag == ERROR) {
+      return elm;
+    }
+    ret = makeCons(elm, ret);
+    lst = lst.cons().cdr;
+  }
+  return nreverse(ret);
+}
+
+LObj apply(LObj fn, LObj args) {
+  if (fn.tag == ERROR) {
+    return fn;
+  } else if (args.tag == ERROR) {
+    return args;
+  } else if (fn.tag == SUBR) {
+    return fn.subr().call(args);
+  }
+  return new LObj(ERROR, fn.toString() + " is not function");
+}
+
+class SubrCar extends Subr {
+  LObj call(LObj args) {
+    return safeCar(safeCar(args));
+  }
+}
+
+class SubrCdr extends Subr {
+  LObj call(LObj args) {
+    return safeCdr(safeCar(args));
+  }
+}
+
+class SubrCons extends Subr {
+  LObj call(LObj args) {
+    return makeCons(safeCar(args), safeCar(safeCdr(args)));
+  }
 }
 
 void initialize() {
   symTable.put("nil", kNil);
   addToEnv(symT, symT, gEnv);
+  addToEnv(makeSym("car"), new LObj(SUBR, new SubrCar()), gEnv);
+  addToEnv(makeSym("cdr"), new LObj(SUBR, new SubrCdr()), gEnv);
+  addToEnv(makeSym("cons"), new LObj(SUBR, new SubrCons()), gEnv);
 }
 
 void setup(){
